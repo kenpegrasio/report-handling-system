@@ -1,197 +1,228 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-
-import { Button } from "@/components/ui/button";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { redirect } from "next/navigation";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "next-themes";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
 
-const reportTypeOptions = [
-  "review",
-  "user",
-  "business",
-  "service",
-  "other",
-] as const;
+export default function Home() {
+  const { theme, systemTheme } = useTheme();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-const formSchema = z.object({
-  type: z.enum(reportTypeOptions),
-  target_id: z.number().min(1, "Target ID must be at least 1"),
-  reason: z.string().min(1, "Reason is required").max(255),
-  description: z.string().max(500).optional(),
-});
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [mounted, setMounted] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const currentTheme = theme === "system" ? systemTheme : theme;
 
-export default function ReportForm() {
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      type: "other",
-      target_id: undefined,
-      reason: "",
-      description: "",
-    },
-  });
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const checkAuthStatus = async () => {
     try {
-      const response = await fetch("/api/reports", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+      const response = await fetch("/api/auth", {
+        method: "GET",
+        credentials: "include",
       });
+
       if (response.ok) {
-        alert("Report submitted successfully.");
+        const data = await response.json();
+        if (data.isAuthenticated) {
+          setIsLoggedIn(true);
+          setUserEmail(data.email || "");
+          setIsAdmin(data.role === "admin" || false);
+        } else {
+          setIsLoggedIn(false);
+          setUserEmail("");
+          setIsAdmin(false);
+        }
+      }
+    } catch (error) {
+      console.error("Auth check failed:", error);
+      setIsLoggedIn(false);
+      setUserEmail("");
+      setIsAdmin(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const formData = new FormData(e.target as HTMLFormElement);
+      const email = formData.get("email") as string;
+
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (data.message === "Approved" || data.message === "Prohibited") {
         window.location.href = "/";
       } else {
-        alert("Failed to submit report.");
+        router.push("/?userNotFound=true");
       }
-    } catch (error: any) {
-      alert("An unexpected error occurred. Please try again.");
-      console.error("Submission error:", error);
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Failed to login. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const handleLogout = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        setIsLoggedIn(false);
+        setUserEmail("");
+        window.location.href = "/";
+      } else {
+        setError("Failed to logout. Please try again.");
+      }
+    } catch (err) {
+      console.error("Logout error:", err);
+      setError("Failed to logout. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setMounted(true);
+    checkAuthStatus();
+  }, []);
+
+  useEffect(() => {
+    if (mounted && searchParams.get("unauthorized") === "true") {
+      toast.error("Please visit the homepage first!", {
+        position: "top-left",
+        style: {
+          background: theme === "dark" ? "hsl(222.2 84% 4.9%)" : "white",
+          color: theme === "dark" ? "hsl(210 40% 98%)" : "hsl(222.2 84% 4.9%)",
+          borderColor:
+            theme === "dark"
+              ? "hsl(217.2 32.6% 17.5%)"
+              : "hsl(214.3 31.8% 91.4%)",
+        },
+      });
+      window.history.replaceState(null, "", "/");
+    }
+
+    if (searchParams.get("userNotFound") === "true") {
+      toast.error("User not found!", {
+        position: "top-left",
+        style: {
+          background: theme === "dark" ? "hsl(222.2 84% 4.9%)" : "white",
+          color: theme === "dark" ? "hsl(210 40% 98%)" : "hsl(222.2 84% 4.9%)",
+          borderColor:
+            theme === "dark"
+              ? "hsl(217.2 32.6% 17.5%)"
+              : "hsl(214.3 31.8% 91.4%)",
+        },
+      });
+      window.history.replaceState(null, "", "/");
+    }
+  }, [searchParams, theme, mounted]);
+
+  if (!mounted) {
+    return null;
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-center text-2xl font-bold text-gray-800 dark:text-gray-200">
-            Submit a Report
+    <div
+      className={`flex items-center justify-center min-h-screen ${
+        currentTheme === "dark" ? "bg-gray-900" : "bg-gray-100"
+      }`}
+    >
+      <Card className="w-full max-w-sm">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold">
+            {isLoggedIn ? `Welcome back, ${userEmail}` : "Welcome back"}
           </CardTitle>
+          <CardDescription>
+            {isLoggedIn
+              ? "You are currently logged in"
+              : "Enter your email to access your account"}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Report Type
-                      <span className="ml-1 text-red-500">*</span>
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select report type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="bg-white dark:bg-gray-800">
-                        {reportTypeOptions.map((option) => (
-                          <SelectItem
-                            key={option}
-                            value={option}
-                            className="hover:bg-gray-100 dark:hover:bg-gray-700"
-                          >
-                            {option.charAt(0).toUpperCase() + option.slice(1)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage className="text-xs text-red-600 dark:text-red-400" />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="target_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Target ID
-                      <span className="ml-1 text-red-500">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter the ID you're reporting"
-                        value={field.value || ""}
-                        onChange={(e) => {
-                          const num = parseInt(
-                            e.target.value.replace(/\D/g, "")
-                          );
-                          field.onChange(isNaN(num) ? undefined : num);
-                        }}
-                        className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                      />
-                    </FormControl>
-                    <FormMessage className="text-xs text-red-600 dark:text-red-400" />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="reason"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Reason
-                      <span className="ml-1 text-red-500">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Briefly describe the reason for your report"
-                        {...field}
-                        className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                      />
-                    </FormControl>
-                    <FormMessage className="text-xs text-red-600 dark:text-red-400" />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Additional Details (Optional)
-                    </FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Provide any additional information that might help us understand your report"
-                        className="min-h-[100px] dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                        {...field}
-                        value={field.value || ""}
-                      />
-                    </FormControl>
-                    <FormMessage className="text-xs text-red-600 dark:text-red-400" />
-                  </FormItem>
-                )}
-              />
-
-              <div className="pt-2">
+          {isLoggedIn ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  You can access your account or logout below
+                </p>
+              </div>
+              <div className="flex flex-col gap-2">
                 <Button
-                  type="submit"
-                  className="cursor-pointer w-full bg-blue-600 hover:bg-blue-700 focus-visible:ring-blue-500 dark:bg-blue-700 dark:hover:bg-blue-800"
+                  onClick={() => router.push("/user")}
+                  disabled={isLoading}
+                  className="cursor-pointer"
                 >
-                  Submit Report
+                  Submit a Report
+                </Button>
+                {isAdmin ? (
+                  <Button
+                    onClick={() => router.push("/admin")}
+                    disabled={isLoading}
+                    className="cursor-pointer"
+                  >
+                    Go to Admin Dashboard
+                  </Button>
+                ) : (
+                  <></>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={handleLogout}
+                  disabled={isLoading}
+                  className="cursor-pointer"
+                >
+                  {isLoading ? "Logging out..." : "Logout"}
                 </Button>
               </div>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="m@example.com"
+                  required
+                />
+              </div>
+              {error && <p className="text-red-500 text-sm">{error}</p>}
+              <Button className="w-full" type="submit" disabled={isLoading}>
+                {isLoading ? "Loading..." : "Continue with Email"}
+              </Button>
             </form>
-          </Form>
+          )}
         </CardContent>
       </Card>
     </div>

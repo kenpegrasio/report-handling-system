@@ -118,3 +118,16 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* For Sonner Toaster theming */
+[data-sonner-toast][data-theme="light"] {
+  --normal-bg: white;
+  --normal-border: #e5e7eb;
+  --normal-text: #111827;
+}
+
+[data-sonner-toast][data-theme="dark"] {
+  --normal-bg: #1f2937;
+  --normal-border: #374151;
+  --normal-text: #f9fafb;
+}
