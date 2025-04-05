@@ -9,13 +9,25 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 export function ModeToggle() {
-  const { setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
 
   const handleThemeChange = (newTheme: string) => {
     setTheme(newTheme);
     document.cookie = `next-theme=${newTheme}; path=/`;
+    toast.info(`Theme changed to ${newTheme}`, {
+      position: "top-left",
+      style: {
+        background: theme === "dark" ? "hsl(222.2 84% 4.9%)" : "white",
+        color: theme === "dark" ? "hsl(210 40% 98%)" : "hsl(222.2 84% 4.9%)",
+        borderColor:
+          theme === "dark"
+            ? "hsl(217.2 32.6% 17.5%)"
+            : "hsl(214.3 31.8% 91.4%)",
+      },
+    });
   };
 
   return (

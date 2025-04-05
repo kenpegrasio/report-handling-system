@@ -98,9 +98,30 @@ export default function Home() {
       if (response.ok) {
         setIsLoggedIn(false);
         setUserEmail("");
-        window.location.href = "/";
+        toast.info("Logout Successful!", {
+          position: "top-left",
+          style: {
+            background: theme === "dark" ? "hsl(222.2 84% 4.9%)" : "white",
+            color: theme === "dark" ? "hsl(210 40% 98%)" : "hsl(222.2 84% 4.9%)",
+            borderColor:
+              theme === "dark"
+                ? "hsl(217.2 32.6% 17.5%)"
+                : "hsl(214.3 31.8% 91.4%)",
+          },
+        });
       } else {
         setError("Failed to logout. Please try again.");
+        toast.error("Failed to logout. Please try again.", {
+          position: "top-left",
+          style: {
+            background: theme === "dark" ? "hsl(222.2 84% 4.9%)" : "white",
+            color: theme === "dark" ? "hsl(210 40% 98%)" : "hsl(222.2 84% 4.9%)",
+            borderColor:
+              theme === "dark"
+                ? "hsl(217.2 32.6% 17.5%)"
+                : "hsl(214.3 31.8% 91.4%)",
+          },
+        });
       }
     } catch (err) {
       console.error("Logout error:", err);

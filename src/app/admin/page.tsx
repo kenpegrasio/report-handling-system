@@ -11,10 +11,15 @@ import {
 } from "@/components/ui/table";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
+import { getCurrentUser } from "@/lib/auth";
+import { CheckCircle2 } from "lucide-react";
+import { useTheme } from "next-themes";
+import { toast } from "sonner";
 
 interface User {
-  id: string;
+  id: number;
   email: string;
   name: string | null;
   role: "user" | "admin";
@@ -36,6 +41,7 @@ interface Report {
 }
 
 export default function ReportTable() {
+  const { theme } = useTheme();
   const [statusFilter, setStatusFilter] = useState<
     "all" | "resolved" | "unresolved"
   >("all");
@@ -44,6 +50,44 @@ export default function ReportTable() {
   >("all");
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const handleResolveReport = async (reportId: string) => {
+    const user = await getCurrentUser();
+    if (!user) {
+      return;
+    }
+    try {
+      const response = await fetch(`/api/reports`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: reportId,
+          user_id: user.userId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to resolve report");
+      }
+
+      alert("Report sucessfully resolved!");
+      window.location.reload();
+    } catch (error) {
+      toast.error("Error resolving report!", {
+        position: "top-left",
+        style: {
+          background: theme === "dark" ? "hsl(222.2 84% 4.9%)" : "white",
+          color: theme === "dark" ? "hsl(210 40% 98%)" : "hsl(222.2 84% 4.9%)",
+          borderColor:
+            theme === "dark"
+              ? "hsl(217.2 32.6% 17.5%)"
+              : "hsl(214.3 31.8% 91.4%)",
+        },
+      });
+    }
+  };
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -123,12 +167,13 @@ export default function ReportTable() {
                 <TableHead>Status</TableHead>
                 <TableHead>Reason</TableHead>
                 <TableHead className="text-right">Details</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
+                  <TableCell colSpan={8} className="text-center py-8">
                     <svg
                       className="mx-auto h-6 w-6 text-gray-500 animate-spin"
                       xmlns="http://www.w3.org/2000/svg"
@@ -153,7 +198,7 @@ export default function ReportTable() {
                 </TableRow>
               ) : reports.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-4">
+                  <TableCell colSpan={8} className="text-center py-4">
                     No reports found
                   </TableCell>
                 </TableRow>
@@ -178,7 +223,7 @@ export default function ReportTable() {
                           Resolved
                           {report.resolver && (
                             <span className="ml-1 text-green-600">
-                              by {report.resolver.name || report.resolver.email}
+                              by {report.resolver.email || report.resolver.name}
                             </span>
                           )}
                         </span>
@@ -196,6 +241,25 @@ export default function ReportTable() {
                       >
                         {report.description || "No description"}
                       </p>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {!report.resolved_at && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="hover:bg-green-50 hover:text-green-600 transition-colors"
+                          onClick={() => handleResolveReport(report.id)}
+                        >
+                          <CheckCircle2 className="w-4 h-4 mr-2" />
+                          Mark Resolved
+                        </Button>
+                      )}
+                      {report.resolved_at && (
+                        <div className="flex items-center justify-end text-green-600">
+                          <CheckCircle2 className="w-4 h-4 mr-2" />
+                          <span className="text-sm font-medium">Resolved</span>
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

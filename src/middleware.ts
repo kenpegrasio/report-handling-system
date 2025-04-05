@@ -5,14 +5,6 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const token = request.cookies.get("auth-token")?.value;
 
-  // Public routes that don't require authentication
-  const publicRoutes = ['/'];
-  
-  // If there's no token and the route is not public
-  if (!token && !publicRoutes.includes(path)) {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
   // If there's a token, verify it
   if (token) {
     try {
@@ -51,7 +43,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/',
     '/admin/:path*',
     '/user/:path*'
   ]

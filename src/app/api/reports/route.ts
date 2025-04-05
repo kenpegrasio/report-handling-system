@@ -6,7 +6,10 @@ function convertBigIntToString(obj: any): any {
     return obj.map(convertBigIntToString);
   } else if (obj !== null && typeof obj === "object") {
     return Object.fromEntries(
-      Object.entries(obj).map(([key, value]) => [key, convertBigIntToString(value)])
+      Object.entries(obj).map(([key, value]) => [
+        key,
+        convertBigIntToString(value),
+      ])
     );
   } else if (typeof obj === "bigint") {
     return obj.toString();
@@ -46,12 +49,23 @@ export async function GET(request: Request) {
     const status = searchParams.get("status") || "all";
     const type = searchParams.get("type") || "all";
 
-    const categoryFilter = type === "all" ? {} : { equals: type as "review" | "user" | "business" | "service" | "other" };
-    
-    const statusFilter = status === "resolved" 
-      ? { not: null } 
-      : status === "unresolved" 
-        ? { equals: null } 
+    const categoryFilter =
+      type === "all"
+        ? {}
+        : {
+            equals: type as
+              | "review"
+              | "user"
+              | "business"
+              | "service"
+              | "other",
+          };
+
+    const statusFilter =
+      status === "resolved"
+        ? { not: null }
+        : status === "unresolved"
+        ? { equals: null }
         : {};
 
     const reports = await prisma.report.findMany({
@@ -70,6 +84,32 @@ export async function GET(request: Request) {
     console.error("Error:", error);
     return NextResponse.json(
       { error: "Failed to fetch report", details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const { id, user_id } = await request.json();
+
+    const updateData = {
+      resolved_at: new Date(),
+      ...(user_id && {
+        resolved_by: BigInt(user_id),
+      })
+    };
+
+    const updatedReport = await prisma.report.update({
+      where: { id: BigInt(id) },
+      data: updateData,
+    });
+
+    return NextResponse.json(convertBigIntToString(updatedReport));
+  } catch (error: any) {
+    console.log("Error: ", error);
+    return NextResponse.json(
+      { error: "Failed to update report", details: error.message },
       { status: 500 }
     );
   }
