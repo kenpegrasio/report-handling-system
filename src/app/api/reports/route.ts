@@ -19,7 +19,7 @@ function convertBigIntToString(obj: any): any {
 
 export async function POST(request: Request) {
   try {
-    const { type, target_id, reason, description } = await request.json();
+    const { type, target_id, reason, description, submitted_by } = await request.json();
 
     await prisma.report.create({
       data: {
@@ -27,6 +27,7 @@ export async function POST(request: Request) {
         target_id,
         reason,
         description,
+        submitted_by
       },
     });
 

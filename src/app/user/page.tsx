@@ -24,6 +24,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useEffect, useState } from "react";
+import { getCurrentUser } from "@/lib/auth";
 
 const reportTypeOptions = [
   "review",
@@ -53,12 +54,19 @@ export default function ReportForm() {
   const [mounted, setMounted] = useState(false);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    const user = await getCurrentUser();
+    if (!user) return;
+  
     try {
       const response = await fetch("/api/reports", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          ...values,
+          submitted_by: user.userId.toString()
+        }),
       });
+  
       if (response.ok) {
         alert("Report submitted successfully.");
         window.location.href = "/";
