@@ -46,8 +46,16 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
+
     const status = searchParams.get("status") || "all";
     const type = searchParams.get("type") || "all";
+
+    const sortBy = searchParams.get("sortBy") || "created_at"; // default sort
+    const sortOrder = (searchParams.get("sortOrder") || "desc") as "asc" | "desc";
+
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const skip = (page - 1) * limit;
 
     const categoryFilter =
       type === "all"
@@ -77,9 +85,29 @@ export async function GET(request: Request) {
         submitter: true,
         resolver: true,
       },
+      orderBy: {
+        [sortBy]: sortOrder,
+      },
+      skip,
+      take: limit,
     });
 
-    return NextResponse.json(convertBigIntToString(reports));
+    const total = await prisma.report.count({
+      where: {
+        resolved_at: statusFilter,
+        type: categoryFilter,
+      },
+    });
+
+    return NextResponse.json({
+      data: convertBigIntToString(reports),
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error: any) {
     console.error("Error:", error);
     return NextResponse.json(
@@ -88,6 +116,7 @@ export async function GET(request: Request) {
     );
   }
 }
+
 
 export async function PUT(request: Request) {
   try {

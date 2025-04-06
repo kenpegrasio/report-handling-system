@@ -48,14 +48,17 @@ export default function ReportTable() {
   const [typeFilter, setTypeFilter] = useState<
     "all" | "review" | "user" | "business" | "service" | "other"
   >("all");
+  const [sortBy, setSortBy] = useState<keyof Report>("created_at");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const handleResolveReport = async (reportId: string) => {
     const user = await getCurrentUser();
-    if (!user) {
-      return;
-    }
+    if (!user) return;
+
     try {
       const response = await fetch(`/api/reports`, {
         method: "PUT",
@@ -68,11 +71,9 @@ export default function ReportTable() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to resolve report");
-      }
+      if (!response.ok) throw new Error("Failed to resolve report");
 
-      alert("Report sucessfully resolved!");
+      alert("Report successfully resolved!");
       window.location.reload();
     } catch (error) {
       toast.error("Error resolving report!", {
@@ -95,16 +96,18 @@ export default function ReportTable() {
       try {
         const url = new URL("/api/reports", window.location.origin);
         url.searchParams.set("status", statusFilter);
-        if (typeFilter !== "all") {
-          url.searchParams.set("type", typeFilter);
-        }
+        url.searchParams.set("type", typeFilter);
+        url.searchParams.set("sortBy", sortBy);
+        url.searchParams.set("sortOrder", sortOrder);
+        url.searchParams.set("page", String(page));
+        url.searchParams.set("limit", "10");
 
         const response = await fetch(url.toString());
-        if (!response.ok) {
-          throw new Error("Failed to fetch reports");
-        }
+        if (!response.ok) throw new Error("Failed to fetch reports");
         const data = await response.json();
-        setReports(data);
+
+        setReports(data.data);
+        setTotalPages(data.pagination.totalPages);
       } catch (error) {
         console.error("Error fetching reports:", error);
         setReports([]);
@@ -114,20 +117,23 @@ export default function ReportTable() {
     };
 
     fetchReports();
-  }, [statusFilter, typeFilter]);
+  }, [statusFilter, typeFilter, sortBy, sortOrder, page]);
 
   return (
     <div className="container mx-auto py-10">
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <CardTitle className="text-2xl font-bold tracking-tight">
               Report Management
             </CardTitle>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-4">
               <Tabs
                 value={statusFilter}
-                onValueChange={(value) => setStatusFilter(value as any)}
+                onValueChange={(value) => {
+                  setStatusFilter(value as any);
+                  setPage(1);
+                }}
               >
                 <TabsList>
                   <TabsTrigger value="all">All</TabsTrigger>
@@ -137,8 +143,11 @@ export default function ReportTable() {
               </Tabs>
               <select
                 value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value as any)}
-                className="bg-background border rounded-md px-3 py-2 text-sm"
+                onChange={(e) => {
+                  setTypeFilter(e.target.value as any);
+                  setPage(1);
+                }}
+                className="px-3 py-2 text-sm rounded-md border bg-background text-foreground border-input"
               >
                 <option value="all">All Types</option>
                 <option value="review">Review</option>
@@ -147,20 +156,78 @@ export default function ReportTable() {
                 <option value="service">Service</option>
                 <option value="other">Other</option>
               </select>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Sort by:
+                </label>
+                <div className="flex gap-2">
+                  <div className="relative">
+                    <select
+                      value={sortBy}
+                      onChange={(e) =>
+                        setSortBy(e.target.value as keyof Report)
+                      }
+                      className="appearance-none pl-3 pr-8 py-2 text-sm rounded-md border bg-background text-foreground border-input"
+                    >
+                      <option value="id">Report ID</option>
+                      <option value="created_at">Created At</option>
+                      <option value="resolved_at">Resolved At</option>
+                      <option value="type">Type</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
+                      <svg
+                        className="h-4 w-4"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M5.23 7.21a.75.75 0 011.06.02L10 11.207l3.71-3.976a.75.75 0 111.08 1.04l-4.25 4.56a.75.75 0 01-1.08 0l-4.25-4.56a.75.75 0 01.02-1.06z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <select
+                      value={sortOrder}
+                      onChange={(e) =>
+                        setSortOrder(e.target.value as "asc" | "desc")
+                      }
+                      className="appearance-none pl-3 pr-8 py-2 text-sm rounded-md border bg-background text-foreground border-input"
+                    >
+                      <option value="desc">Descending</option>
+                      <option value="asc">Ascending</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
+                      <svg
+                        className="h-4 w-4"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M5.23 7.21a.75.75 0 011.06.02L10 11.207l3.71-3.976a.75.75 0 111.08 1.04l-4.25 4.56a.75.75 0 01-1.08 0l-4.25-4.56a.75.75 0 01.02-1.06z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableCaption>
-              {isLoading ||
-                `Showing ${reports.length} reports (${statusFilter}${
-                  typeFilter !== "all" ? ` · ${typeFilter}` : ""
-                })`}
+              {isLoading
+                ? "Loading..."
+                : `Showing ${reports.length} reports (Page ${page} of ${totalPages})`}
             </TableCaption>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[100px]">ID</TableHead>
+                <TableHead>ID</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Target</TableHead>
                 <TableHead>Submitted By</TableHead>
@@ -174,26 +241,7 @@ export default function ReportTable() {
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8">
-                    <svg
-                      className="mx-auto h-6 w-6 text-gray-500 animate-spin"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                      ></path>
-                    </svg>
+                    <div className="animate-spin h-6 w-6 mx-auto text-gray-500 border-4 border-t-transparent rounded-full" />
                   </TableCell>
                 </TableRow>
               ) : reports.length === 0 ? (
@@ -243,7 +291,7 @@ export default function ReportTable() {
                       </p>
                     </TableCell>
                     <TableCell className="text-right">
-                      {!report.resolved_at && (
+                      {!report.resolved_at ? (
                         <Button
                           size="sm"
                           variant="ghost"
@@ -253,8 +301,7 @@ export default function ReportTable() {
                           <CheckCircle2 className="w-4 h-4 mr-2" />
                           Mark Resolved
                         </Button>
-                      )}
-                      {report.resolved_at && (
+                      ) : (
                         <div className="flex items-center justify-end text-green-600">
                           <CheckCircle2 className="w-4 h-4 mr-2" />
                           <span className="text-sm font-medium">Resolved</span>
@@ -266,6 +313,26 @@ export default function ReportTable() {
               )}
             </TableBody>
           </Table>
+
+          <div className="mt-6 flex justify-center gap-4">
+            <Button
+              variant="outline"
+              onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+              disabled={page === 1}
+            >
+              Previous
+            </Button>
+            <span className="mt-2 text-sm text-muted-foreground">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+              disabled={page === totalPages}
+            >
+              Next
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
