@@ -21,6 +21,7 @@ export default function Home() {
   const searchParams = useSearchParams();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [error, setError] = useState("");
   const [mounted, setMounted] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -52,6 +53,8 @@ export default function Home() {
       setIsLoggedIn(false);
       setUserEmail("");
       setIsAdmin(false);
+    } finally {
+      setCheckingAuth(false);
     }
   };
 
@@ -168,8 +171,17 @@ export default function Home() {
     }
   }, [searchParams, theme, mounted]);
 
-  if (!mounted) {
-    return null;
+  if (!mounted || checkingAuth) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
+        <div className="flex items-center space-x-2">
+          <div className="w-6 h-6 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-sm text-gray-700 dark:text-gray-300">
+            Authenticating...
+          </span>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -205,7 +217,7 @@ export default function Home() {
                 >
                   Submit a Report
                 </Button>
-                {isAdmin ? (
+                {isAdmin && (
                   <Button
                     onClick={() => router.push("/admin")}
                     disabled={isLoading}
@@ -213,8 +225,6 @@ export default function Home() {
                   >
                     Go to Admin Dashboard
                   </Button>
-                ) : (
-                  <></>
                 )}
                 <Button
                   variant="outline"
