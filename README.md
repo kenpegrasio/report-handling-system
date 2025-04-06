@@ -8,7 +8,9 @@ This repository contains the source code for the **Report Handling System**, a w
 - Admin UI to manage reports with filtering, sorting and pagination
 - REST API integration
 - PostgreSQL database via Prisma ORM
-- User Authentication with JWT 
+- User Authentication with JWT
+- Support both light mode and dark mode
+- Implement toasts or alerts after several actions
 
 ---
 
