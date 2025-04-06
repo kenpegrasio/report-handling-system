@@ -56,6 +56,12 @@ Edit `.env` to match your PostgreSQL setup:
 DATABASE_URL=postgresql://<username>:<password>@localhost:5432/<your_database>
 ```
 
+Edit a JWT secret token in the `.env`:
+
+```
+JWT_SECRET="your-key"
+```
+
 ---
 
 ## 🧱 Database Setup
