@@ -95,3 +95,12 @@ npm run dev
 ```
 
 Open your browser and go to: [http://localhost:3000](http://localhost:3000)
+
+---
+
+### 🚀 Testing Features
+
+- To test the **user** feature, log in with the email: `user1@servihub.com`.
+- To test the **admin** feature, log in with the email: `admin@servihub.com`.
+
+You can find these test accounts in the `seed.ts` file.
