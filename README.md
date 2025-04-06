@@ -68,6 +68,14 @@ npx prisma migrate dev --name init
 
 > This will create the database tables based on your Prisma schema.
 
+### 5. Seed the Database
+
+```bash
+npx prisma db seed
+```
+
+> This will populate the database with an initial set of data.
+
 ---
 
 ## 🧪 Run the App
