@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Report Handling System
 
-## Getting Started
+This repository contains the source code for the **Report Handling System**, a web application built with **Next.js**, **TypeScript**, and **Prisma**. The system provides filtering, sorting, and pagination functionalities to manage reports efficiently.
 
-First, run the development server:
+## 🚀 Features
+
+- Report submission form for user and admin
+- Admin UI to manage reports with filtering, sorting and pagination
+- REST API integration
+- PostgreSQL database via Prisma ORM
+- User Authentication with JWT 
+
+---
+
+## 🛠 Prerequisites
+
+Make sure you have the following installed on your machine:
+
+- [Node.js](https://nodejs.org/) (v14 or later)
+- [npm](https://www.npmjs.com/)
+- [PostgreSQL](https://www.postgresql.org/)
+
+---
+
+## 📦 Installation
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/kenpegrasio/report-handling-system.git
+cd report-handling-system
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+---
+
+## ⚙️ Configuration
+
+### 3. Setup Environment Variables
+
+- Create a `.env` file in the root directory.
+- Copy the content from `.env.example` and update values as needed.
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` to match your PostgreSQL setup:
+
+```
+DATABASE_URL=postgresql://<username>:<password>@localhost:5432/<your_database>
+```
+
+---
+
+## 🧱 Database Setup
+
+### 4. Run Prisma Migrations
+
+```bash
+npx prisma migrate dev --name init
+```
+
+> This will create the database tables based on your Prisma schema.
+
+---
+
+## 🧪 Run the App
+
+### 5. Start the Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Open your browser and go to: [http://localhost:3000](http://localhost:3000)
